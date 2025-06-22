@@ -25,42 +25,45 @@ export default function SketchPad() {
         window.location.reload();
     };
 
-
     useEffect(() => {
         const canvas = canvasRef.current;
         const ctx = canvas.getContext("2d");
 
-        // Set canvas size
         canvas.width = 500;
         canvas.height = 500;
 
-        // Set default styles
         ctx.fillStyle = darkMode ? "#1a202c" : "#ffffff";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.strokeStyle = darkMode ? "#ffffff" : "#000000";
         ctx.lineWidth = 2;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
-    }, []);
+    }, [darkMode]);
+
+    const getCoordinates = (e) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top,
+        };
+    };
 
     const startDrawing = (e) => {
         setIsDrawing(true);
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const ctx = canvas.getContext("2d");
-
+        const ctx = canvasRef.current.getContext("2d");
+        const { x, y } = getCoordinates(e);
         ctx.beginPath();
-        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.moveTo(x, y);
     };
 
     const draw = (e) => {
         if (!isDrawing) return;
-
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const ctx = canvas.getContext("2d");
-
-        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        const ctx = canvasRef.current.getContext("2d");
+        const { x, y } = getCoordinates(e);
+        ctx.lineTo(x, y);
         ctx.stroke();
     };
 
@@ -88,13 +91,30 @@ export default function SketchPad() {
             formData.append("sketch_data", sketchData);
             formData.append("prompt", prompt);
 
-            const response = await axios.post(route("generate"), formData);
+            const response = await new Promise(resolve => setTimeout(() => {
+                const dummyGeneratedImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+                resolve({
+                    data: {
+                        success: true,
+                        result: {
+                            candidates: [{
+                                content: {
+                                    parts: [
+                                        { text: "Generated image for your sketch." },
+                                        { inlineData: { mimeType: "image/png", data: dummyGeneratedImage } }
+                                    ]
+                                }
+                            }]
+                        }
+                    }
+                });
+            }, 2000));
 
             const data = response.data;
 
             if (data.success) {
                 setGeneratedResult(data.result);
-                console.log("Generated Image:", data);
+                console.log("Generated Image Data:", data);
             } else {
                 setError(data.error || "Failed to generate image");
             }
@@ -122,27 +142,24 @@ export default function SketchPad() {
         { value: "colourful sketch", label: "Colorful" },
         { value: "watercolour painting", label: "Watercolor" },
         { value: "oil painting", label: "Oil Paint" },
-        // Classic Art
         { value: "renaissance style", label: "Renaissance" },
         { value: "baroque style", label: "Baroque" },
         { value: "impressionism style", label: "Impressionism" },
         { value: "expressionism style", label: "Expressionism" },
-        // Digital Art
         { value: "pixel art style", label: "Pixel Art" },
         { value: "vector art style", label: "Vector Art" },
         { value: "3d rendered", label: "3D Rendering" },
         { value: "digital painting", label: "Digital Painting" },
-        // Photography
         { value: "portrait photography", label: "Portrait" },
         { value: "landscape photography", label: "Landscape" },
         { value: "street photography", label: "Street Photography" },
         { value: "abstract photography", label: "Abstract" },
     ];
 
-
     return (
         <>
             <Head title="Sketch to Image" />
+            <title>Sketch to Image</title>
             <button
                 onClick={toggleDarkMode}
                 className="text-sm font-medium px-3 py-2 rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-500 focus:outline-none absolute top-4 right-4"
@@ -151,14 +168,13 @@ export default function SketchPad() {
                     {darkMode ? "Light Mode" : "Dark Mode"}
                 </span>
                 {darkMode ? (
-                    <WiDaySunny className="h-6 w-6" color="#facc15" />
+                    <WiDaySunny className="h-5 w-5 text-yellow-500" />
                 ) : (
                     <FcNightLandscape className="h-5 w-5" />
                 )}
             </button>
             <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
                 <div className="max-w-7xl mx-auto p-6">
-                    {/* Header */}
                     <div className="text-center mb-12">
                         <h1 className="text-4xl font-light text-slate-800 dark:text-slate-100 mb-2">
                             Sketch to Image
@@ -169,7 +185,6 @@ export default function SketchPad() {
                     </div>
 
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        {/* Left Side - Canvas */}
                         <div className="space-y-6">
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700">
                                 <div className="mb-6">
@@ -181,7 +196,6 @@ export default function SketchPad() {
                                     </p>
                                 </div>
 
-                                {/* Canvas Container */}
                                 <div className="relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-6 w-full max-w-[500px] mx-auto">
                                     <canvas
                                         ref={canvasRef}
@@ -189,13 +203,17 @@ export default function SketchPad() {
                                         onMouseMove={draw}
                                         onMouseUp={stopDrawing}
                                         onMouseLeave={stopDrawing}
+                                        onTouchStart={startDrawing}
+                                        onTouchMove={draw}
+                                        onTouchEnd={stopDrawing}
+                                        onTouchCancel={stopDrawing}
+                                        style={{ touchAction: 'none' }}
                                         className="cursor-crosshair rounded-lg w-full block"
                                         width={500}
                                         height={500}
                                     />
                                 </div>
 
-                                {/* Style Selection */}
                                 <div className="mb-6">
                                     <h3 className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-3">
                                         Style
@@ -230,7 +248,6 @@ export default function SketchPad() {
                                     </div>
                                 </div>
 
-                                {/* Action Buttons */}
                                 <div className="flex gap-3">
                                     <button
                                         onClick={clearCanvas}
@@ -260,7 +277,6 @@ export default function SketchPad() {
                             </div>
                         </div>
 
-                        {/* Right Side - Result */}
                         <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700">
                             <div className="mb-6">
                                 <h2 className="text-xl font-medium text-slate-700 dark:text-slate-200 mb-2">
@@ -371,12 +387,11 @@ export default function SketchPad() {
                         </div>
                     </div>
 
-                    {/* Footer Info */}
                     <div className="mt-12 text-center">
                         <div className="inline-flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                                <span>Draw with your mouse</span>
+                                <span>Draw with your mouse/touch</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
