@@ -91,30 +91,13 @@ export default function SketchPad() {
             formData.append("sketch_data", sketchData);
             formData.append("prompt", prompt);
 
-            const response = await new Promise(resolve => setTimeout(() => {
-                const dummyGeneratedImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-                resolve({
-                    data: {
-                        success: true,
-                        result: {
-                            candidates: [{
-                                content: {
-                                    parts: [
-                                        { text: "Generated image for your sketch." },
-                                        { inlineData: { mimeType: "image/png", data: dummyGeneratedImage } }
-                                    ]
-                                }
-                            }]
-                        }
-                    }
-                });
-            }, 2000));
+            const response = await axios.post(route("generate"), formData);
 
             const data = response.data;
 
             if (data.success) {
                 setGeneratedResult(data.result);
-                console.log("Generated Image Data:", data);
+                console.log("Generated Image:", data);
             } else {
                 setError(data.error || "Failed to generate image");
             }
@@ -207,7 +190,7 @@ export default function SketchPad() {
                                         onTouchMove={draw}
                                         onTouchEnd={stopDrawing}
                                         onTouchCancel={stopDrawing}
-                                        style={{ touchAction: 'none' }}
+                                        style={{ touchAction: "none" }}
                                         className="cursor-crosshair rounded-lg w-full block"
                                         width={500}
                                         height={500}
