@@ -6,7 +6,7 @@ import { WiDaySunny } from "react-icons/wi";
 export default function SketchPad() {
     const canvasRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [prompt, setPrompt] = useState("colourful doodle");
+    const [prompt, setPrompt] = useState("80's to 90's Ghibli styled anime sketch colourful");
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedResult, setGeneratedResult] = useState(null);
     const [error, setError] = useState("");
