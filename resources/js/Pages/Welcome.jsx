@@ -119,7 +119,7 @@ export default function SketchPad() {
     };
 
     const styleOptions = [
-        { value: "colourful doodle", label: "Doodle" },
+        { value: "80's to 90's Ghibli styled anime sketch colourful", label: "Anime" },
         { value: "realistic", label: "Realistic" },
         { value: "sketch", label: "Sketch" },
         { value: "colourful sketch", label: "Colorful" },
